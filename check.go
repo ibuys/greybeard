@@ -14,12 +14,14 @@ const (
 )
 
 type Check struct {
-	Name     string
-	Command  string
-	Args     []string
-	Timeout  time.Duration
-	Interval time.Duration
-	Attempts int
+	Name                     string
+	Command                  string
+	Args                     []string
+	Timeout                  time.Duration
+	Interval                 time.Duration
+	Attempts                 int
+	CriticalReminderInterval time.Duration
+	Actions                  CheckActions
 }
 
 type Result struct {

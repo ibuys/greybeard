@@ -12,6 +12,13 @@ PostgreSQL is required runtime infrastructure for Greybeard. If Greybeard cannot
 
 Transitions alert. Persistent bad states remind. Checks determine state; reminder timers determine reminder cadence. Candidates do neither.
 
+When a critical reminder is about to fire, Greybeard first checks the database to verify if the critical check has been acknowledged or not. If it has, Greybeard does not fire off the reminder action. 
+
+Greybeard does not provide a GUI, there is no API outside of the config files. 
+
+Greybeard does not include escalation logic, notification-provider integrations, remediation policies, or operator tooling. Those can live in the checks and actions. It's Greybeard's job to let the actions know when something has happened.
+
+
 
 ## Database Schema
 

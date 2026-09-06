@@ -10,26 +10,44 @@ import (
 	"go.yaml.in/yaml/v3"
 )
 
-type CheckConfig struct {
-	Name     string   `yaml:"name"`
-	Command  string   `yaml:"command"`
-	Args     []string `yaml:"args"`
-	Timeout  string   `yaml:"timeout"`
-	Interval string   `yaml:"interval"`
-	Attempts int      `yaml:"attempts"`
-}
-
 type Config struct {
 	StartupSpread string         `yaml:"startup_spread"`
 	Defaults      DefaultsConfig `yaml:"defaults"`
 	Imports       []string       `yaml:"imports"`
+	Actions       []ActionConfig `yaml:"actions"`
 	Checks        []CheckConfig  `yaml:"checks"`
 }
 
+type CheckConfig struct {
+	Name                     string             `yaml:"name"`
+	Command                  string             `yaml:"command"`
+	Args                     []string           `yaml:"args"`
+	Timeout                  string             `yaml:"timeout"`
+	Interval                 string             `yaml:"interval"`
+	Attempts                 int                `yaml:"attempts"`
+	CriticalReminderInterval string             `yaml:"critical_reminder_interval"`
+	Actions                  CheckActionsConfig `yaml:"actions"`
+}
+
+type ActionConfig struct {
+	Name    string   `yaml:"name"`
+	Command string   `yaml:"command"`
+	Args    []string `yaml:"args"`
+	Timeout string   `yaml:"timeout"`
+}
+
+type CheckActionsConfig struct {
+	OK       []string `yaml:"name"`
+	Warning  []string `yaml:"warning"`
+	Critical []string `yaml:"critical"`
+	Unknown  []string `yaml:"unknown"`
+}
+
 type DefaultsConfig struct {
-	Timeout  string `yaml:"timeout"`
-	Interval string `yaml:"interval"`
-	Attempts int    `yaml:"attempts"`
+	Timeout                  string `yaml:"timeout"`
+	Interval                 string `yaml:"interval"`
+	Attempts                 int    `yaml:"attempts"`
+	CriticalReminderInterval string `yaml:"critical_reminder_interval"`
 }
 
 type ImportedConfig struct {
