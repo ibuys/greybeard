@@ -10,6 +10,8 @@ import (
 	"go.yaml.in/yaml/v3"
 )
 
+const defaultCriticalReminderInterval = 10 * time.Minute
+
 type Config struct {
 	StartupSpread string         `yaml:"startup_spread"`
 	Defaults      DefaultsConfig `yaml:"defaults"`
@@ -56,6 +58,7 @@ type ImportedConfig struct {
 
 type RuntimeConfig struct {
 	Checks        []Check
+	Actions       map[string]Action
 	StartupSpread time.Duration
 }
 
@@ -100,6 +103,10 @@ func validateCheck(check Check) error {
 
 	if check.Timeout >= check.Interval {
 		return fmt.Errorf("check timeout must be smaller than interval")
+	}
+
+	if check.CriticalReminderInterval <= 0 {
+		return fmt.Errorf("critical reminder interval must be greater than zero")
 	}
 
 	return nil
@@ -191,6 +198,11 @@ func loadConfig(filename string) (RuntimeConfig, error) {
 		return RuntimeConfig{}, err
 	}
 
+	actions, err := buildActions(config.Actions)
+	if err != nil {
+		return RuntimeConfig{}, err
+	}
+
 	configDir := filepath.Dir(filename)
 
 	for _, importPath := range config.Imports {
@@ -227,6 +239,7 @@ func loadConfig(filename string) (RuntimeConfig, error) {
 
 	return RuntimeConfig{
 		Checks:        checks,
+		Actions:       actions,
 		StartupSpread: startupSpread,
 	}, nil
 }
@@ -271,13 +284,42 @@ func buildChecks(checkConfigs []CheckConfig, defaults DefaultsConfig) ([]Check, 
 			attempts = defaults.Attempts
 		}
 
+		criticalReminderIntervalString := checkConfig.CriticalReminderInterval
+
+		if criticalReminderIntervalString == "" {
+			criticalReminderIntervalString = defaults.CriticalReminderInterval
+		}
+
+		criticalReminderInterval := defaultCriticalReminderInterval
+
+		if criticalReminderIntervalString != "" {
+			criticalReminderInterval, err = time.ParseDuration(
+				criticalReminderIntervalString,
+			)
+			if err != nil {
+				return nil, fmt.Errorf(
+					"check %q has invalid critical reminder interval %q: %w",
+					checkConfig.Name,
+					criticalReminderIntervalString,
+					err,
+				)
+			}
+		}
+
 		check := Check{
-			Name:     checkConfig.Name,
-			Command:  checkConfig.Command,
-			Args:     checkConfig.Args,
-			Timeout:  timeout,
-			Interval: interval,
-			Attempts: attempts,
+			Name:                     checkConfig.Name,
+			Command:                  checkConfig.Command,
+			Args:                     checkConfig.Args,
+			Timeout:                  timeout,
+			Interval:                 interval,
+			Attempts:                 attempts,
+			CriticalReminderInterval: criticalReminderInterval,
+			Actions: CheckActions{
+				OK:       checkConfig.Actions.OK,
+				Warning:  checkConfig.Actions.Warning,
+				Critical: checkConfig.Actions.Critical,
+				Unknown:  checkConfig.Actions.Unknown,
+			},
 		}
 
 		if err := validateCheck(check); err != nil {
@@ -293,6 +335,54 @@ func buildChecks(checkConfigs []CheckConfig, defaults DefaultsConfig) ([]Check, 
 
 	return checks, nil
 
+}
+
+func buildActions(actionConfigs []ActionConfig) (map[string]Action, error) {
+	actions := make(map[string]Action, len(actionConfigs))
+
+	for _, actionConfig := range actionConfigs {
+		if _, exists := actions[actionConfig.Name]; exists {
+			return nil, fmt.Errorf(
+				"duplicate action name %q",
+				actionConfig.Name,
+			)
+		}
+
+		if actionConfig.Timeout == "" {
+			return nil, fmt.Errorf(
+				"action %q: tiemout is required",
+				actionConfig.Name,
+			)
+		}
+
+		timeout, err := time.ParseDuration(actionConfig.Timeout)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"action %q has invalid timeout %q: %w",
+				actionConfig.Name,
+				actionConfig.Timeout,
+				err,
+			)
+		}
+
+		action := Action{
+			Name:    actionConfig.Name,
+			Command: actionConfig.Command,
+			Args:    actionConfig.Args,
+			Timeout: timeout,
+		}
+
+		if err := validateAction(action); err != nil {
+			return nil, fmt.Errorf(
+				"action %q: %w",
+				actionConfig.Name,
+				err,
+			)
+		}
+
+		actions[action.Name] = action
+	}
+	return actions, nil
 }
 
 func loadImportedChecks(filename string, defaults DefaultsConfig) ([]Check, error) {
@@ -387,6 +477,67 @@ func validateDefaults(defaults DefaultsConfig) error {
 
 	if timeout >= interval {
 		return fmt.Errorf("timeout must be smaller than interval")
+	}
+
+	return nil
+}
+
+func validateAction(action Action) error {
+	if action.Name == "" {
+		return fmt.Errorf("action name is required")
+	}
+
+	if action.Command == "" {
+		return fmt.Errorf("action command is required")
+	}
+
+	if action.Timeout <= 0 {
+		return fmt.Errorf("action timeout must be greater than zero")
+	}
+
+	return nil
+}
+
+func validateActionReferences(
+	checks []Check,
+	actions map[string]Action,
+) error {
+
+	for _, check := range checks {
+		states := map[string][]string{
+			"ok":       check.Actions.OK,
+			"warning":  check.Actions.Warning,
+			"critical": check.Actions.Critical,
+			"unknown":  check.Actions.Unknown,
+		}
+
+		for state, names := range states {
+			seen := make(map[string]bool)
+
+			for _, name := range names {
+				if seen[name] {
+					return fmt.Errorf(
+						"check %q has duplicate %s action %q",
+						check.Name,
+						state,
+						name,
+					)
+				}
+
+				seen[name] = true
+
+				if _, exists := actions[name]; !exists {
+					return fmt.Errorf(
+						"check %q references undefined %s action %q",
+						check.Name,
+						state,
+						name,
+					)
+				}
+
+			}
+
+		}
 	}
 
 	return nil

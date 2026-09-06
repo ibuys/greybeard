@@ -10,11 +10,12 @@ import (
 
 func validCheck() Check {
 	return Check{
-		Name:     "check-ok",
-		Command:  "./test_checks/check-ok.sh",
-		Timeout:  time.Second,
-		Interval: time.Minute,
-		Attempts: 3,
+		Name:                     "check-ok",
+		Command:                  "./test_checks/check-ok.sh",
+		Timeout:                  time.Second,
+		Interval:                 time.Minute,
+		Attempts:                 3,
+		CriticalReminderInterval: 10 * time.Minute,
 	}
 }
 
@@ -264,6 +265,49 @@ func TestBuildChecks(t *testing.T) {
 			t.Fatalf("expected error, got none")
 		}
 	})
+
+	t.Run("uses built-in critical reminder interval", func(t *testing.T) {
+		checks, err := buildChecks([]CheckConfig{
+			{Name: "a", Command: "cmd"},
+		}, defaults)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		if checks[0].CriticalReminderInterval != 10*time.Minute {
+			t.Errorf(
+				"CriticalReminderInterval = %v, want 10m",
+				checks[0].CriticalReminderInterval,
+			)
+		}
+	})
+
+	t.Run("per-check critical reminder interval overrides default", func(t *testing.T) {
+		defaults := DefaultsConfig{
+			Timeout:                  "10s",
+			Interval:                 "1m",
+			Attempts:                 3,
+			CriticalReminderInterval: "10m",
+		}
+
+		checks, err := buildChecks([]CheckConfig{
+			{
+				Name:                     "a",
+				Command:                  "cmd",
+				CriticalReminderInterval: "5m",
+			},
+		}, defaults)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		if checks[0].CriticalReminderInterval != 5*time.Minute {
+			t.Errorf(
+				"CriticalReminderInterval = %v, want 5m",
+				checks[0].CriticalReminderInterval,
+			)
+		}
+	})
 }
 
 func writeFile(t *testing.T, path, content string) {
@@ -425,6 +469,98 @@ func TestFindConfigFile(t *testing.T) {
 
 		if _, err := findConfigFile(); err == nil {
 			t.Errorf("expected error, got none")
+		}
+	})
+}
+
+func TestBuildActions(t *testing.T) {
+	t.Run("valid action", func(t *testing.T) {
+		actions, err := buildActions([]ActionConfig{
+			{
+				Name:    "notify-admin",
+				Command: "./notify.sh",
+				Timeout: "10s",
+			},
+		})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		action := actions["notify-admin"]
+
+		if action.Command != "./notify.sh" {
+			t.Errorf("Command = %q, want %q", action.Command, "./notify.sh")
+		}
+
+		if action.Timeout != 10*time.Second {
+			t.Errorf("Timeout = %v, want 10s", action.Timeout)
+		}
+	})
+
+	t.Run("duplicate action names", func(t *testing.T) {
+		_, err := buildActions([]ActionConfig{
+			{Name: "notify", Command: "a", Timeout: "10s"},
+			{Name: "notify", Command: "b", Timeout: "10s"},
+		})
+
+		if err == nil {
+			t.Fatal("expected error, got none")
+		}
+	})
+
+	t.Run("missing timeout", func(t *testing.T) {
+		_, err := buildActions([]ActionConfig{
+			{Name: "notify", Command: "./notify.sh"},
+		})
+
+		if err == nil {
+			t.Fatal("expected error, got none")
+		}
+	})
+
+	t.Run("invalid timeout", func(t *testing.T) {
+		_, err := buildActions([]ActionConfig{
+			{Name: "notify", Command: "./notify.sh", Timeout: "forever"},
+		})
+
+		if err == nil {
+			t.Fatal("expected error, got none")
+		}
+	})
+}
+
+func TestValidateActionReferences(t *testing.T) {
+	actions := map[string]Action{
+		"notify": {Name: "notify"},
+	}
+
+	t.Run("defined action", func(t *testing.T) {
+		checks := []Check{
+			{
+				Name: "web",
+				Actions: CheckActions{
+					Critical: []string{"notify"},
+				},
+			},
+		}
+
+		if err := validateActionReferences(checks, actions); err != nil {
+			t.Errorf("unexpected error: %v", err)
+		}
+	})
+
+	t.Run("undefined action", func(t *testing.T) {
+		checks := []Check{
+			{
+				Name: "web",
+				Actions: CheckActions{
+					Critical: []string{"does-not-exist"},
+				},
+			},
+		}
+
+		if err := validateActionReferences(checks, actions); err == nil {
+			t.Fatal("expected error, got none")
 		}
 	})
 }
