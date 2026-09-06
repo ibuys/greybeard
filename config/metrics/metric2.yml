@@ -1,0 +1,12 @@
+checks:
+  - name: check-unknown-metric
+    command: ./test_checks/check-unknown-metric.sh
+
+  - name: check-warning-metric
+    command: ./test_checks/check-warning-metric.sh
+
+  - name: check-args
+    command: ./test_checks/check-args.sh
+    args:
+        - 40
+        - 50

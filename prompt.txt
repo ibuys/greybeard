@@ -1,0 +1,116 @@
+I'm continuing work on Greybeard, my small Nagios-inspired monitoring engine written in Go.
+
+We recently implemented state confirmation using consecutive observations, and then did a focused cleanup/review pass. I'm uploading the current Go source again; please treat the uploaded code as authoritative.
+
+Current state-confirmation behavior:
+
+* Checks execute external plugins/scripts and interpret exit codes 0–3 as OK/WARNING/CRITICAL/UNKNOWN.
+* PostgreSQL stores every observation and the durable confirmed state.
+* `attempts` is a state-confirmation threshold, not a retry count.
+* Any state change requires N consecutive observations of the same new state.
+* Recovery uses the same confirmation rule.
+* The first-ever observation establishes the initial confirmed state immediately.
+* Candidate states are memory-only and deliberately lost on restart.
+* Confirmed states are loaded from PostgreSQL at startup.
+* Every observation is persisted.
+* Only confirmed state changes update the durable `states` table.
+* Flapping detection and actions/notifications are still out of scope.
+
+The architecture is:
+
+observation → state confirmation decision → durable confirmed state → actions later
+
+`StateTracker` owns confirmation policy. PostgreSQL persistence does not decide state transitions.
+
+During the cleanup pass we already made these changes:
+
+* Removed redundant `StateTransition.Changed`.
+* Simplified `handleTransition()` and made transition output consistent.
+* Fixed a `validateDefaults()` bug where the second `time.ParseDuration()` overwrote the first parse error.
+* Strengthened config tests to check the correct error type/message.
+* Enforced `timeout < interval` for per-check overrides as well as defaults.
+* Removed the obsolete `ResultStore` interface and `MemoryResultStore`; Greybeard v1 is PostgreSQL-only.
+* Simplified `StateTracker` so it internally stores only confirmed `State` values rather than whole `CheckState` objects.
+* Renamed the internal confirmed-state map to `confirmed`.
+* Renamed `StateCandidate.Attempts` to `StateCandidate.Count`.
+* Renamed the `Observe()` parameter from `attempts` to `threshold`.
+* Kept configured `Check.Attempts` as the user-facing/YAML terminology.
+* Strengthened the test that verifies an observation matching confirmed state returns an empty `StateDecision`.
+* Fixed a shutdown race so Ctrl-C doesn't accidentally process a result using an already-canceled persistence context.
+* Removed a duplicate `StartedAt = time.Now()` assignment in `runCheck()`, so duration consistently represents the whole check operation.
+* Made `StateTransition` authoritative for check name/current state when printing transitions.
+* Removed `CheckState.CheckedAt`; `changed_at` is now the single timestamp for when a confirmed state was established.
+* Removed the `checked_at` column from `greybeard.states` in PostgreSQL and updated the canonical schema.
+* Removed redundant `CheckState.Name`; the check name comes from the map key when loading and from `Result.Name` when recording.
+* Removed the redundant `ctx.Err()` check at the beginning of `PostgresResultStore.Record()` and let pgx operations handle context cancellation.
+
+Everything builds, unit tests pass, and manual state-confirmation/restart/Ctrl-C testing is working.
+
+We stopped while reviewing `PostgresResultStore.Record()`.
+
+Please continue the cleanup review from there. Specifically look for:
+
+* unnecessary complexity
+* awkward or duplicated state/persistence responsibilities
+* subtle persistence or transaction bugs
+* Go idioms I'm missing
+* obsolete code left by the refactor
+* tests that should be strengthened
+
+Keep Greybeard intentionally simple. Don't introduce interfaces, frameworks, generic abstractions, or extensibility just because we can.
+
+Most importantly: go one improvement at a time, in small compile-safe changes. Explain why each change is worthwhile, then stop so I can type it myself, build, run tests, and report back before we continue.
+
+I'm typing the application-code changes myself as a way to learn Go. Larger test updates are fine for me to copy.
+
+---------------------------------------------------
+---------------------------------------------------
+---------------------------------------------------
+
+
+
+
+
+So……… in this setup, let's say Apache is going along great, state is OK, then it fails and I've got attempts = 3. After Greybeard tries to reach Apache 3 times, it sets the confirmed state to CRITICAL and does a thing (yet to be determined). The sysadmin wakes up, fixes Apache, and goes back to bed. Then Greybeard checks that it's up 3 times before setting confirmed state back to OK. That sound about right? Attempts have to be confirmed n number of times for any state change. 
+
+Need to think more about flapping detection. 
+
+“Observe, then decide” is probably staying.
+
+> Greybeard does not persist or recover scheduler state. On every startup, it reads configuration, verifies database availability, loads persisted monitoring state, and schedules all configured checks from scratch. Missed check executions are not replayed.
+
+> PostgreSQL is required runtime infrastructure for Greybeard. If Greybeard cannot read or write its persistent state, it exits rather than continuing in a degraded mode.
+
+
+## Database Concepts
+
+check_results
+-------------
+id
+check_name
+state
+output
+perf_data
+perf_data_error
+started_at
+finished_at
+duration
+
+check_metrics
+-------------
+result_id
+name
+value
+unit
+warning
+critical
+minimum
+maximum
+
+check_state
+-----------
+check_name
+state
+output
+checked_at
+changed_at

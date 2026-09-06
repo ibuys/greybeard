@@ -1,0 +1,11 @@
+startup_spread: 0
+
+defaults:
+    interval: 1m
+    timeout: 45s
+    attempts: 3
+
+imports:
+    - broken.yml
+    - ok.yml
+    - metrics

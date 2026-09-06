@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>HierarchyData</key>
+	<array>
+		<string>9B49E478-8E73-459C-A97D-966515C99307</string>
+	</array>
+	<key>ProjectItems</key>
+	<dict>
+		<key>9B49E478-8E73-459C-A97D-966515C99307</key>
+		<dict>
+			<key>ItemData</key>
+			<dict>
+				<key>BookmarkData</key>
+				<data>
+				Ym9va/ACAAAAAAUQQAAAAOJMAEy9C+tI8oua1DAPPS2u
+				zJz0bbNtzqLGJB6NISSuAAAAAAAAAAAAAAAAAAAAANwB
+				AAAEAAAAAwMAAAAIACgFAAAAAQEAAFVzZXJzAAAADQAA
+				AAEBAABqb25hdGhhbi5idXlzAAAABAAAAAEBAABVbml4
+				AwAAAAEBAABzcmMACQAAAAEBAABncmV5YmVhcmQAAAAU
+				AAAAAQYAABAAAAAgAAAAOAAAAEQAAABQAAAACAAAAAQD
+				AAA7SAAAAAAAAAgAAAAEAwAAyroAAAAAAAAIAAAABAMA
+				AFYbBAAAAAAACAAAAAQDAAAHbwQAAAAAAAgAAAAEAwAA
+				JUlgAAAAAAAUAAAAAQYAAIAAAACQAAAAoAAAALAAAADA
+				AAAACAAAAAAEAABByCTmSw7erBgAAAABAgAAAgAAAAAA
+				AAAPAAAAAAAAAAAAAAAAAAAACAAAAAQDAAADAAAAAAAA
+				AAQAAAADAwAA9QEAAAgAAAABCQAAZmlsZTovLy8MAAAA
+				AQEAAE1hY2ludG9zaCBIRAgAAAAEAwAAAFChG3MAAAAI
+				AAAAAAQAAEHIFrRlgAAAJAAAAAEBAAA2OTRCREU0NC04
+				NkIyLTQwMEItODVCRC0zRDVCQUUwNjJBNjYYAAAAAQIA
+				AIEAAAABAAAA7xMAAAEAAAAAAAAAAAAAAAEAAAABAQAA
+				LwAAAAAAAAABBQAAzAAAAP7///8BAAAAAAAAABAAAAAE
+				EAAAZAAAAAAAAAAFEAAA0AAAAAAAAAAQEAAA/AAAAAAA
+				AABAEAAA7AAAAAAAAAACIAAAyAEAAAAAAAAFIAAAOAEA
+				AAAAAAAQIAAASAEAAAAAAAARIAAAfAEAAAAAAAASIAAA
+				XAEAAAAAAAATIAAAbAEAAAAAAAAgIAAAqAEAAAAAAAAw
+				IAAA1AEAAAAAAAABwAAAHAEAAAAAAAARwAAAIAAAAAAA
+				AAASwAAALAEAAAAAAAAQ0AAABAAAAAAAAAA=
+				</data>
+				<key>FileURL</key>
+				<string>file:///Users/jonathan.buys/Unix/src/greybeard/</string>
+				<key>HasSecurityScope</key>
+				<true/>
+				<key>RelativePath</key>
+				<string>./</string>
+				<key>TypeID</key>
+				<string>_CFileLocator</string>
+				<key>Version</key>
+				<integer>1</integer>
+			</dict>
+			<key>ItemName</key>
+			<string>greybeard</string>
+			<key>ItemType</key>
+			<string>FolderReference</string>
+			<key>UserOverrideItemName</key>
+			<true/>
+		</dict>
+	</dict>
+	<key>ProjectUniqueID</key>
+	<string>BAFA8946-364E-41F6-A029-E03243B76972</string>
+	<key>com.barebones.DocumentFormatVersion</key>
+	<integer>5</integer>
+	<key>com.barebones.DocumentType</key>
+	<string>Project</string>
+</dict>
+</plist>

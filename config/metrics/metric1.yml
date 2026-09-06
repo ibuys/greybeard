@@ -1,0 +1,6 @@
+checks:
+  - name: check-metrics-quoted
+    command: ./test_checks/check-metrics-quoted.sh
+
+  - name: check-metrics
+    command: ./test_checks/check-metrics.sh

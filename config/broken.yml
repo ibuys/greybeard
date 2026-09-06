@@ -1,0 +1,14 @@
+checks:
+  - name: check-broken
+    command: ./test_checks/check-broken.sh
+    interval: 3s
+    timeout: 2s
+    attempts: 3
+
+#   - name: check-noexec
+#     command: ./test_checks/check-noexec.sh
+#     
+#   - name: check-slow
+#     command: ./test_checks/check-slow.sh
+#     timeout: 3s
+#     interval: 10s
