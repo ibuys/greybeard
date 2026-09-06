@@ -1,5 +1,49 @@
 # Greybeard
 
+> Observe, then decide.
+
 An old school monitoring system, built for the modern environment.
 
 WIP. 
+
+Greybeard does not persist or recover scheduler state. On every startup, it reads configuration, verifies database availability, loads persisted monitoring state, and schedules all configured checks from scratch. Missed check executions are not replayed.
+
+PostgreSQL is required runtime infrastructure for Greybeard. If Greybeard cannot read or write its persistent state, it exits rather than continuing in a degraded mode.
+
+Transitions alert. Persistent bad states remind. Checks determine state; reminder timers determine reminder cadence. Candidates do neither.
+
+
+## Database Schema
+
+```
+check_results
+-------------
+id
+check_name
+state
+output
+perf_data
+perf_data_error
+started_at
+finished_at
+duration
+
+check_metrics
+-------------
+result_id
+name
+value
+unit
+warning
+critical
+minimum
+maximum
+
+check_state
+-----------
+check_name
+state
+output
+checked_at
+changed_at
+```
