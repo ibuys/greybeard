@@ -1,0 +1,7 @@
+{
+    "trigger": "transition",
+    "check_name": "check-broken",
+    "previous_state": "OK",
+    "state": "CRITICAL",
+    "output": "CRITICAL - something is broken\n"
+}

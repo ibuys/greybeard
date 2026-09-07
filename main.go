@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	// 	"hash/maphash"
 	"os"
 	"os/signal"
 	"sync"
@@ -67,6 +68,11 @@ func main() {
 
 	results := make(chan Result)
 
+	reminders := make(chan string)
+
+	reminderCancels := make(map[string]context.CancelFunc)
+	criticalOutputs := make(map[string]string)
+
 	if databaseURL == "" {
 		fmt.Fprintln(os.Stderr, "UNKNOWN - GREYBEARD_DATABASE_URL is required")
 		os.Exit(int(stateUnknown))
@@ -86,6 +92,46 @@ func main() {
 		names = append(names, check.Name)
 		attempts[check.Name] = check.Attempts
 		checksByName[check.Name] = check
+	}
+
+	startCriticalReminder := func(check Check) {
+
+		// No point starting a clock if there are no actions defined for a check.
+		if len(check.Actions.Critical) == 0 {
+			return
+		}
+
+		// Don't start two schedules for the same incident.
+		if _, exists := reminderCancels[check.Name]; exists {
+			return
+		}
+
+		reminderCtx, cancel := context.WithCancel(ctx)
+		reminderCancels[check.Name] = cancel
+
+		wg.Add(1)
+
+		go func() {
+			defer wg.Done()
+
+			runCriticalReminderSchedule(
+				reminderCtx,
+				check,
+				reminders,
+			)
+		}()
+	}
+
+	stopCriticalReminder := func(name string) {
+
+		cancel, exists := reminderCancels[name]
+		if !exists {
+			return
+		}
+
+		cancel()
+		delete(reminderCancels, name)
+		delete(criticalOutputs, name)
 	}
 
 	states, err := resultStore.LoadStates(ctx, names)
@@ -166,6 +212,13 @@ mainLoop:
 
 				check := checksByName[result.Name]
 
+				if transition.Current == stateCritical {
+					criticalOutputs[result.Name] = result.Output
+					startCriticalReminder(check)
+				} else if transition.Previous == stateCritical {
+					stopCriticalReminder(result.Name)
+				}
+
 				wg.Add(1)
 
 				go func() {
@@ -190,6 +243,12 @@ mainLoop:
 					result.Output,
 				)
 			} else {
+
+				if result.State == stateCritical {
+					criticalOutputs[result.Name] = result.Output
+					startCriticalReminder(checksByName[result.Name])
+				}
+
 				fmt.Printf("%s: %s", result.Name, result.Output)
 			}
 
@@ -217,6 +276,37 @@ mainLoop:
 				}
 				fmt.Println()
 			}
+
+		case name := <-reminders:
+
+			if _, active := reminderCancels[name]; !active {
+				continue
+			}
+
+			output, exists := criticalOutputs[name]
+			if !exists {
+				continue
+			}
+
+			check := checksByName[name]
+
+			fmt.Printf(
+				"%s: CRITICAL reminder due\n",
+				name,
+			)
+
+			wg.Add(1)
+
+			go func(checkc Check, output string) {
+				defer wg.Done()
+
+				runReminderActions(
+					ctx,
+					check,
+					config.Actions,
+					output,
+				)
+			}(check, output)
 
 		case <-ctx.Done():
 			break mainLoop

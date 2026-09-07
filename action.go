@@ -75,16 +75,15 @@ func actionInputForTransition(
 }
 
 // Take action
-func runTransitionActions(
+
+func runActions(
 	ctx context.Context,
 	check Check,
 	actions map[string]Action,
-	transition StateTransition,
-	result Result,
+	names []string,
+	input ActionInput,
 ) {
-	input := actionInputForTransition(transition, result)
-
-	for _, name := range check.Actions.namesForState(transition.Current) {
+	for _, name := range names {
 		action := actions[name]
 
 		output, err := runAction(ctx, action, input)
@@ -113,5 +112,57 @@ func runTransitionActions(
 				output,
 			)
 		}
+
+	}
+
+}
+
+func runTransitionActions(
+	ctx context.Context,
+	check Check,
+	actions map[string]Action,
+	transition StateTransition,
+	result Result,
+) {
+	input := actionInputForTransition(transition, result)
+
+	runActions(
+		ctx,
+		check,
+		actions,
+		check.Actions.namesForState(transition.Current),
+		input,
+	)
+}
+
+func runReminderActions(
+	ctx context.Context,
+	check Check,
+	actions map[string]Action,
+	output string,
+) {
+	input := actionInputForCriticalReminder(
+		check.Name,
+		output,
+	)
+
+	runActions(
+		ctx,
+		check,
+		actions,
+		check.Actions.Critical,
+		input,
+	)
+}
+
+func actionInputForCriticalReminder(
+	checkName string,
+	output string,
+) ActionInput {
+	return ActionInput{
+		Trigger:   actionTriggerCriticalReminder,
+		CheckName: checkName,
+		State:     stateCritical.String(),
+		Output:    output,
 	}
 }
