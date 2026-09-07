@@ -9,3 +9,8 @@ imports:
     - broken.yml
     - ok.yml
     - metrics
+
+actions:
+    - name: capture-json
+      command: ./test_actions/capture-json.sh
+      timeout: 5s

@@ -80,10 +80,12 @@ func main() {
 
 	names := make([]string, 0, len(checks))
 	attempts := make(map[string]int, len(checks))
+	checksByName := make(map[string]Check, len(checks))
 
 	for _, check := range checks {
 		names = append(names, check.Name)
 		attempts[check.Name] = check.Attempts
+		checksByName[check.Name] = check
 	}
 
 	states, err := resultStore.LoadStates(ctx, names)
@@ -157,7 +159,27 @@ mainLoop:
 			}
 
 			if decision.Transition != nil {
-				handleTransition(*decision.Transition, result)
+
+				transition := *decision.Transition
+
+				handleTransition(transition, result)
+
+				check := checksByName[result.Name]
+
+				wg.Add(1)
+
+				go func() {
+					defer wg.Done()
+
+					runTransitionActions(
+						ctx,
+						check,
+						config.Actions,
+						transition,
+						result,
+					)
+				}()
+
 			} else if decision.Candidate != nil {
 				fmt.Printf(
 					"%s: candidate %s %d/%d: %s",

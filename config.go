@@ -39,7 +39,7 @@ type ActionConfig struct {
 }
 
 type CheckActionsConfig struct {
-	OK       []string `yaml:"name"`
+	OK       []string `yaml:"ok"`
 	Warning  []string `yaml:"warning"`
 	Critical []string `yaml:"critical"`
 	Unknown  []string `yaml:"unknown"`
@@ -234,6 +234,10 @@ func loadConfig(filename string) (RuntimeConfig, error) {
 	}
 
 	if err := validateAllChecks(checks); err != nil {
+		return RuntimeConfig{}, err
+	}
+
+	if err := validateActionReferences(checks, actions); err != nil {
 		return RuntimeConfig{}, err
 	}
 

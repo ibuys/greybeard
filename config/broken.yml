@@ -4,6 +4,10 @@ checks:
     interval: 3s
     timeout: 2s
     attempts: 3
+    actions:
+        critical:
+            - capture-json
+            
 
 #   - name: check-noexec
 #     command: ./test_checks/check-noexec.sh
