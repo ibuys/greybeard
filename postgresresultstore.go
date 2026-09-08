@@ -189,7 +189,8 @@ func (store *PostgresResultStore) Record(
 			DO UPDATE SET
 				state = EXCLUDED.state,
 				output = EXCLUDED.output,
-				changed_at= EXCLUDED.changed_at
+				changed_at= EXCLUDED.changed_at,
+				acknowledged_at = NULL
 		`,
 			result.Name,
 			int16(result.State),
@@ -217,4 +218,35 @@ func (store *PostgresResultStore) Record(
 
 func (store *PostgresResultStore) Close() {
 
+}
+
+func (store *PostgresResultStore) IsCriticalAcknowledged(
+	ctx context.Context,
+	name string,
+) (bool, error) {
+	var acknowledged bool
+	err := store.pool.QueryRow(
+		ctx,
+		`
+            SELECT EXISTS (
+                SELECT 1
+                FROM greybeard.states
+                WHERE check_name = $1
+                    AND state = $2
+                    AND acknowledged_at IS NOT NULL
+            )
+        `,
+		name,
+		int16(stateCritical),
+	).Scan(&acknowledged)
+
+	if err != nil {
+		return false, fmt.Errorf(
+			"unable to read acknowledgement for %q: %w",
+			name,
+			err,
+		)
+	}
+
+	return acknowledged, nil
 }

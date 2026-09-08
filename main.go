@@ -290,6 +290,32 @@ mainLoop:
 
 			check := checksByName[name]
 
+			acknowledged, err := resultStore.IsCriticalAcknowledged(
+				ctx,
+				name,
+			)
+
+			if err != nil {
+				fmt.Fprintf(
+					os.Stderr,
+					"%s: unable to check acknowledgement: %v\n",
+					name,
+					err,
+				)
+
+				stop()
+				wg.Wait()
+				os.Exit(int(stateUnknown))
+			}
+
+			if acknowledged {
+				fmt.Printf(
+					"%s: CRITICAL reminder suppressed: acknowledged\n",
+					name,
+				)
+				continue
+			}
+
 			fmt.Printf(
 				"%s: CRITICAL reminder due\n",
 				name,
