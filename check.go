@@ -15,6 +15,7 @@ const (
 
 type Check struct {
 	Name                     string
+	Target                   string
 	Command                  string
 	Args                     []string
 	Timeout                  time.Duration
@@ -26,6 +27,7 @@ type Check struct {
 
 type Result struct {
 	Name          string
+	Target        string
 	State         State
 	Output        string
 	PerfData      string

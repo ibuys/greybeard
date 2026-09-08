@@ -109,6 +109,7 @@ func (store *PostgresResultStore) Record(
 		`
 			INSERT INTO greybeard.results (
 				check_name,
+				target,
 				state,
 				output,
 				perf_data,
@@ -117,10 +118,11 @@ func (store *PostgresResultStore) Record(
 				finished_at,
 				duration_ns
 			)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 			RETURNING id
 		`,
 		result.Name,
+		result.Target,
 		int16(result.State),
 		result.Output,
 		result.PerfData,

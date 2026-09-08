@@ -1,0 +1,70 @@
+checks:
+  - name: local-mac-check-disk
+    target: macbook-pro
+    command: ./test_checks/check_disk
+    args:
+      - -w
+      - 10%
+      - -c
+      - 5%
+      - -p
+      - /
+    critical_reminder_interval: 10s
+    interval: 5s
+    timeout: 3s
+    attempts: 3
+    actions:
+        critical:
+            - capture-json
+
+  - name: local-mac-check-tmp
+    target: macbook-pro  
+    command: ./test_checks/check_disk
+    args:
+      - -w
+      - 10%
+      - -c
+      - 5%
+      - -p
+      - /tmp
+    critical_reminder_interval: 10s
+    interval: 5m
+    timeout: 30s
+    attempts: 3
+    actions:
+        critical:
+            - capture-json
+
+  - name: local-mac-check-load
+    target: macbook-pro  
+    command: ./test_checks/check_load
+    args:
+      - -w
+      - 3,5,15
+      - -c
+      - 15,20,25
+    critical_reminder_interval: 10s
+    interval: 5m
+    timeout: 30s
+    attempts: 3
+    actions:
+        critical:
+            - capture-json
+
+  - name: local-mac-check-procs
+    target: macbook-pro  
+    command: ./test_checks/check_procs
+    args:
+      - -w
+      - 10
+      - -c
+      - 20
+      - --metric=CPU
+    critical_reminder_interval: 10s
+    interval: 5m
+    timeout: 30s
+    attempts: 3
+    actions:
+        critical:
+            - capture-json
+

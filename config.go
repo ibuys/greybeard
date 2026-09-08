@@ -22,6 +22,7 @@ type Config struct {
 
 type CheckConfig struct {
 	Name                     string             `yaml:"name"`
+	Target                   string             `yaml:"target"`
 	Command                  string             `yaml:"command"`
 	Args                     []string           `yaml:"args"`
 	Timeout                  string             `yaml:"timeout"`
@@ -83,6 +84,10 @@ func loadConfigFile(filename string, config any) error {
 func validateCheck(check Check) error {
 	if check.Name == "" {
 		return fmt.Errorf("check name is required")
+	}
+
+	if check.Target == "" {
+		return fmt.Errorf("check target is required")
 	}
 
 	if check.Command == "" {
@@ -312,6 +317,7 @@ func buildChecks(checkConfigs []CheckConfig, defaults DefaultsConfig) ([]Check, 
 
 		check := Check{
 			Name:                     checkConfig.Name,
+			Target:                   checkConfig.Target,
 			Command:                  checkConfig.Command,
 			Args:                     checkConfig.Args,
 			Timeout:                  timeout,

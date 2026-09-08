@@ -54,6 +54,7 @@ CREATE TABLE greybeard.metrics (
 CREATE TABLE greybeard.results (
     id bigint NOT NULL,
     check_name text NOT NULL,
+    target text NOT NULL,
     state smallint NOT NULL,
     output text NOT NULL,
     perf_data text NOT NULL,

@@ -11,6 +11,7 @@ import (
 func validCheck() Check {
 	return Check{
 		Name:                     "check-ok",
+		Target:                   "test-host",
 		Command:                  "./test_checks/check-ok.sh",
 		Timeout:                  time.Second,
 		Interval:                 time.Minute,
@@ -189,7 +190,7 @@ func TestBuildChecks(t *testing.T) {
 
 	t.Run("applies defaults when unset", func(t *testing.T) {
 		checks, err := buildChecks([]CheckConfig{
-			{Name: "a", Command: "cmd"},
+			{Name: "a", Target: "target", Command: "cmd"},
 		}, defaults)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -212,7 +213,7 @@ func TestBuildChecks(t *testing.T) {
 
 	t.Run("per-check overrides defaults", func(t *testing.T) {
 		checks, err := buildChecks([]CheckConfig{
-			{Name: "a", Command: "cmd", Timeout: "5s", Interval: "30s", Attempts: 1},
+			{Name: "a", Target: "target", Command: "cmd", Timeout: "5s", Interval: "30s", Attempts: 1},
 		}, defaults)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -258,8 +259,8 @@ func TestBuildChecks(t *testing.T) {
 
 	t.Run("duplicate names error", func(t *testing.T) {
 		_, err := buildChecks([]CheckConfig{
-			{Name: "a", Command: "cmd"},
-			{Name: "a", Command: "cmd"},
+			{Name: "a", Target: "target", Command: "cmd"},
+			{Name: "a", Target: "target", Command: "cmd"},
 		}, defaults)
 		if err == nil {
 			t.Fatalf("expected error, got none")
@@ -268,7 +269,7 @@ func TestBuildChecks(t *testing.T) {
 
 	t.Run("uses built-in critical reminder interval", func(t *testing.T) {
 		checks, err := buildChecks([]CheckConfig{
-			{Name: "a", Command: "cmd"},
+			{Name: "a", Target: "target", Command: "cmd"},
 		}, defaults)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -293,6 +294,7 @@ func TestBuildChecks(t *testing.T) {
 		checks, err := buildChecks([]CheckConfig{
 			{
 				Name:                     "a",
+				Target:                   "target",
 				Command:                  "cmd",
 				CriticalReminderInterval: "5m",
 			},
@@ -369,7 +371,7 @@ func TestLoadImportedChecks(t *testing.T) {
 
 	t.Run("valid checks", func(t *testing.T) {
 		path := filepath.Join(dir, "imported.yml")
-		writeFile(t, path, "checks:\n  - name: imported-check\n    command: cmd\n")
+		writeFile(t, path, "checks:\n  - name: imported-check\n    target: target\n    command: cmd\n")
 
 		checks, err := loadImportedChecks(path, defaults)
 		if err != nil {
@@ -561,6 +563,14 @@ func TestValidateActionReferences(t *testing.T) {
 
 		if err := validateActionReferences(checks, actions); err == nil {
 			t.Fatal("expected error, got none")
+		}
+	})
+
+	t.Run("missing target", func(t *testing.T) {
+		check := validCheck()
+		check.Target = ""
+		if err := validateCheck(check); err == nil {
+			t.Errorf("expected error, got none")
 		}
 	})
 }

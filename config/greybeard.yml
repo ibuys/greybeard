@@ -6,9 +6,8 @@ defaults:
     attempts: 3
     critical_reminder_interval: 15m
 imports:
+    - nagios.yml
     - broken.yml
-    - ok.yml
-    - metrics
 
 actions:
     - name: capture-json

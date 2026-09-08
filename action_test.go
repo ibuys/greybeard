@@ -78,6 +78,7 @@ func TestActionInputForTransition(t *testing.T) {
 		}
 
 		result := Result{
+			Target: "localhost",
 			Output: "CRITICAL - Apache is down\n",
 		}
 
@@ -86,6 +87,7 @@ func TestActionInputForTransition(t *testing.T) {
 		want := ActionInput{
 			Trigger:   actionTriggerTransition,
 			CheckName: "apache",
+			Target:    "localhost",
 			State:     "CRITICAL",
 			Output:    "CRITICAL - Apache is down\n",
 		}
@@ -100,12 +102,14 @@ func TestActionInputForCriticalReminder(t *testing.T) {
 
 	got := actionInputForCriticalReminder(
 		"apache",
+		"localhost",
 		"CRITICAL - Apache is down\n",
 	)
 
 	want := ActionInput{
 		Trigger:   actionTriggerCriticalReminder,
 		CheckName: "apache",
+		Target:    "localhost",
 		State:     "CRITICAL",
 		Output:    "CRITICAL - Apache is down\n",
 	}

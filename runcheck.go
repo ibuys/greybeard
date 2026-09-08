@@ -23,6 +23,7 @@ func runCheck(parentCtx context.Context, check Check) (result Result) {
 
 	result = Result{
 		Name:      check.Name,
+		Target:    check.Target,
 		State:     stateUnknown,
 		StartedAt: time.Now(),
 	}

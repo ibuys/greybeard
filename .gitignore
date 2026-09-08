@@ -1,0 +1,33 @@
+# Greybeard build output
+/greybeard
+/app/greybeard
+
+# Go test / coverage output
+*.test
+*.out
+coverage.*
+profile.*
+
+# Local environment files
+.env
+.env.*
+
+# Local Greybeard configuration
+config/greybeard.local.yml
+config/greybeard.local.yaml
+
+# Borrowed third-party monitoring plugins used only for testing
+/test_checks/nagios/
+
+# Temporary action/test output
+*.log
+*.pid
+*.tmp
+
+# Editor / OS files
+.DS_Store
+*~
+*.swp
+
+/test_checks/nagios/*
+!/test_checks/nagios/README.md
