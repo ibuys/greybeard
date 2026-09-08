@@ -44,7 +44,6 @@ func runAction(
 	}
 
 	cmd.Stdin = bytes.NewReader(payload)
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 
 	output, err := cmd.CombinedOutput()
 
@@ -77,7 +76,7 @@ func runAction(
 	}
 
 	return string(output), fmt.Errorf(
-		"action %q exited with status %d",
+		"action %q failed: %w",
 		action.Name,
 		err,
 	)

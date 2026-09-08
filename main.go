@@ -201,6 +201,7 @@ mainLoop:
 
 				stop()
 				wg.Wait()
+				resultStore.Close()
 				os.Exit(int(stateUnknown))
 			}
 
@@ -323,7 +324,7 @@ mainLoop:
 
 			wg.Add(1)
 
-			go func(checkc Check, output string) {
+			go func(check Check, output string) {
 				defer wg.Done()
 
 				runReminderActions(
@@ -342,7 +343,7 @@ mainLoop:
 	fmt.Println("Greybeard shutting down")
 	wg.Wait()
 
-	resultStore.pool.Close()
+	resultStore.Close()
 
 	fmt.Println("Greybeard stopped")
 	return

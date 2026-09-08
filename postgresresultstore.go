@@ -217,7 +217,7 @@ func (store *PostgresResultStore) Record(
 }
 
 func (store *PostgresResultStore) Close() {
-
+	store.pool.Close()
 }
 
 func (store *PostgresResultStore) IsCriticalAcknowledged(

@@ -354,7 +354,7 @@ func buildActions(actionConfigs []ActionConfig) (map[string]Action, error) {
 
 		if actionConfig.Timeout == "" {
 			return nil, fmt.Errorf(
-				"action %q: tiemout is required",
+				"action %q: timeout is required",
 				actionConfig.Name,
 			)
 		}
