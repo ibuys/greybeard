@@ -1,7 +1,7 @@
 checks:
   - name: local-mac-check-disk
     target: macbook-pro
-    command: ./test_checks/check_disk
+    command: ./test_checks/nagios/check_disk
     args:
       - -w
       - 10%
@@ -19,7 +19,7 @@ checks:
 
   - name: local-mac-check-tmp
     target: macbook-pro  
-    command: ./test_checks/check_disk
+    command: ./test_checks/nagios/check_disk
     args:
       - -w
       - 10%
@@ -37,7 +37,7 @@ checks:
 
   - name: local-mac-check-load
     target: macbook-pro  
-    command: ./test_checks/check_load
+    command: ./test_checks/nagios/check_load
     args:
       - -w
       - 3,5,15
@@ -53,7 +53,7 @@ checks:
 
   - name: local-mac-check-procs
     target: macbook-pro  
-    command: ./test_checks/check_procs
+    command: ./test_checks/nagios/check_procs
     args:
       - -w
       - 10
