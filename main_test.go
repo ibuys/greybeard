@@ -53,10 +53,9 @@ func TestValidateFlagInvalidConfig(t *testing.T) {
 	}
 }
 
-
 func TestValidateFlagInvalidValues(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "broken.yml")
-	
+
 	badvalues := `startup_spread: 0s
 
 defaults:
@@ -69,8 +68,7 @@ checks:
     target: localhost
     command: /bin/true
     timeout: 90s`
-	
-	
+
 	writeFile(t, path, badvalues)
 
 	cmd := exec.Command(
@@ -97,15 +95,15 @@ checks:
 
 func TestValidateFlagInvalidImportedConfig(t *testing.T) {
 
-    dir := t.TempDir()
-    checksDir := filepath.Join(dir, "checks")
-    
-    err := os.Mkdir(checksDir, 0o755)
-    if err != nil {
-        t.Fatalf("unable to create checks directory: %v", err)
-    }
-    
-    mainconfig := `startup_spread: 0
+	dir := t.TempDir()
+	checksDir := filepath.Join(dir, "checks")
+
+	err := os.Mkdir(checksDir, 0o755)
+	if err != nil {
+		t.Fatalf("unable to create checks directory: %v", err)
+	}
+
+	mainconfig := `startup_spread: 0
 
 defaults:
     interval: 1m
@@ -119,12 +117,12 @@ actions:
     - name: capture-json
       command: ./test_actions/capture-json.sh
       timeout: 5s`
-      
-    brokenconfig := "checks: [\n"
+
+	brokenconfig := "checks: [\n"
 
 	configpath := filepath.Join(dir, "greybeard.yml")
 	brokenpath := filepath.Join(checksDir, "broken.yml")
-	
+
 	writeFile(t, configpath, mainconfig)
 	writeFile(t, brokenpath, brokenconfig)
 
