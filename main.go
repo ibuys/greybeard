@@ -14,6 +14,7 @@ import (
 func main() {
 
 	var configFile string
+	var validate bool
 
 	flag.StringVar(
 		&configFile,
@@ -27,6 +28,13 @@ func main() {
 		"config-file",
 		"",
 		"configuration file",
+	)
+
+	flag.BoolVar(
+		&validate,
+		"validate",
+		false,
+		"validate configuration",
 	)
 
 	flag.Parse()
@@ -50,6 +58,13 @@ func main() {
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "UNKNOWN - %v\n", err)
 		os.Exit(int(stateUnknown))
+	}
+
+	if validate {
+		numchecks := len(config.Checks)
+		numactions := len(config.Actions)
+		fmt.Printf("OK - configuration valid: %d checks, %d actions", numchecks, numactions)
+		return
 	}
 
 	checks := config.Checks
