@@ -174,13 +174,36 @@ Likewise, if a system was in `CRITICAL` state, and had a critical reminder sched
 
 On any confirmed transition among `OK`, `WARNING`, `CRITICAL`, and `UNKNOWN`, Greybeard can execute actions assigned to the new state. So, when a check recovers, the sysadmin can know about it. 
 
-A current CRITICAL incident may be acknowledged through PostgreSQL. Acknowledgement suppresses CRITICAL reminders only; checks continue to run and confirmed state transitions still execute their configured actions. The acknowledgement is cleared when the check enters a new confirmed state. 
+A current CRITICAL incident may be acknowledged through the HTTP API. Acknowledgement suppresses future CRITICAL reminders. Checks continue to run, and confirmed state transitions still execute their configured actions. The acknowledgement is cleared when the check enters a new confirmed state.
+
+## HTTP API
+
+Set `GREYBEARD_API_ADDR` to a bind address such as `127.0.0.1:8080` to enable the API. Set `GREYBEARD_API_TOKEN` to a shared secret without whitespace and send it in the `Authorization: Bearer <token>` header on every request. For ECS, inject the token as a task secret and bind the HTTP listener where the private Tailscale endpoint can reach it. Use a loopback listener when the proxy shares Greybeard's network namespace. Keep the listener private and terminate HTTPS at the tailnet endpoint. The API uses the existing PostgreSQL schema.
+
+Use the configured check name as the identifier, percent-encoded as a single path segment. Checks that share a target remain individually addressable. Status lists checks from this process's loaded configuration, including imports, in name order.
+
+| Method and path | Response |
+| --- | --- |
+| `GET /v1/checks` | An object with a `checks` array of status records. |
+| `GET /v1/checks/{name}` | One status record with `name`, `target`, `confirmed`, and `latest_result`. |
+| `GET /v1/checks/{name}/logs` | An object with a `logs` array of historical check runs, newest first. `limit` defaults to 50 and accepts 1–200. When `next_before` is present, pass its value as the URL-encoded `before` query parameter to continue. |
+| `PUT /v1/checks/{name}/acknowledgement` | Send `{"changed_at":"<confirmed.changed_at>"}`. Returns `name`, `changed_at`, and `acknowledged_at` for that incident. |
+
+`confirmed` contains the state used to trigger actions, the output that established it, `changed_at`, and `acknowledged_at` (null until acknowledged). `latest_result` contains the most recent observation's `state` and `finished_at`. An observation can differ from the confirmed state while Greybeard waits for the configured number of consecutive attempts. Both objects are null before a check has any recorded runs. State values are `OK`, `WARNING`, `CRITICAL`, and `UNKNOWN`. Timestamps use UTC RFC 3339.
+
+Each log entry contains `id`, `target`, `state`, `output`, `started_at`, `finished_at`, `duration_ns`, `perf_data`, and `perf_data_error`. The history contains plugin output captured by Greybeard, including observations that did not trigger a transition.
+
+After receiving a notification, read the check status and send the exact `changed_at` from the confirmed CRITICAL state you want to acknowledge. A retry for the same active incident returns the original acknowledgement timestamp. HTTP 409 means the requested incident is no longer current or the check has no confirmed CRITICAL state. Refresh status and have the operator review it before acknowledging a different incident. Greybeard does not store notification delivery receipts, so the API checks incident state. An acknowledgement can arrive while an action is already in flight.
+
+Missing or invalid tokens return HTTP 401. Unknown configured check names return 404, and invalid parameters or bodies return 400. These errors and acknowledgement conflicts use a JSON object with an `error` string.
+
+Run the API and PostgreSQL integration test with `GREYBEARD_TEST_DATABASE_URL` pointing to a disposable database initialized with `greybeard-schema.sql`, then run `go test -run TestAPIWithPostgres ./...`.
 
 ## What Greybeard is Not
 
 Greybeard will not run on Windows.
 
-Greybeard does not provide a GUI or network API. Greybeard does not provide its own daemonization code, it runs in the foreground and relies on operating system tooling for proper daemon handling. 
+Greybeard runs in the foreground and relies on operating system tooling for daemon handling.
 
 Greybeard does not include escalation logic, notification-provider integration, remediation policies, or operator tooling. Each of those jobs, if needed, can live in the checks and actions. It's Greybeard's job to let the action know that something happened. 
 
