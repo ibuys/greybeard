@@ -4,11 +4,12 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	// 	"hash/maphash"
+	"net/http"
 	"os"
 	"os/signal"
 	"sync"
 	"syscall"
+	"time"
 )
 
 func main() {
@@ -152,10 +153,22 @@ func main() {
 	states, err := resultStore.LoadStates(ctx, names)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "UNKNOWN - unable to load persisted state: %v\n", err)
+		resultStore.Close()
 		os.Exit(int(stateUnknown))
 	}
 
 	stateTracker := NewStateTracker(states)
+
+	var apiServer *http.Server
+	var apiFailures <-chan error
+	if addr := os.Getenv("GREYBEARD_API_ADDR"); addr != "" {
+		apiServer, apiFailures, err = startAPI(ctx, addr, os.Getenv("GREYBEARD_API_TOKEN"), resultStore, checks)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "UNKNOWN - unable to start API: %v\n", err)
+			resultStore.Close()
+			os.Exit(int(stateUnknown))
+		}
+	}
 
 	for _, check := range checks {
 
@@ -174,6 +187,7 @@ func main() {
 		}(check)
 	}
 
+	var exitCode int
 mainLoop:
 	for {
 		select {
@@ -214,10 +228,8 @@ mainLoop:
 					err,
 				)
 
-				stop()
-				wg.Wait()
-				resultStore.Close()
-				os.Exit(int(stateUnknown))
+				exitCode = int(stateUnknown)
+				break mainLoop
 			}
 
 			if decision.Transition != nil {
@@ -319,9 +331,8 @@ mainLoop:
 					err,
 				)
 
-				stop()
-				wg.Wait()
-				os.Exit(int(stateUnknown))
+				exitCode = int(stateUnknown)
+				break mainLoop
 			}
 
 			if acknowledged {
@@ -350,17 +361,31 @@ mainLoop:
 				)
 			}(check, output)
 
+		case err := <-apiFailures:
+			fmt.Fprintf(os.Stderr, "UNKNOWN - API stopped: %v\n", err)
+			exitCode = int(stateUnknown)
+			break mainLoop
+
 		case <-ctx.Done():
 			break mainLoop
 		}
 	}
 
 	fmt.Println("Greybeard shutting down")
+	stop()
+	if apiServer != nil {
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		if err := apiServer.Shutdown(shutdownCtx); err != nil {
+			_ = apiServer.Close()
+		}
+		cancel()
+	}
 	wg.Wait()
 
 	resultStore.Close()
 
 	fmt.Println("Greybeard stopped")
-	return
-
+	if exitCode != 0 {
+		os.Exit(exitCode)
+	}
 }
